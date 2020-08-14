@@ -1,4 +1,4 @@
-﻿# San Fransisco Food Truck Finder
+﻿# San Francisco Food Truck Finder
 
 This API provides a Swagger interface to easily find the 5 closest Food Trucks
 
