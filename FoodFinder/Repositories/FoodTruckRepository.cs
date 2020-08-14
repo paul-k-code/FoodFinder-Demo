@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
 
 namespace FoodFinder.Repositories
 {
@@ -31,14 +32,26 @@ namespace FoodFinder.Repositories
             }
         }
 
+        /// <summary>
+        /// This method will update or add records
+        /// </summary>
+        /// <param name="records"></param>
         public void InitializeDatabase(IEnumerable<TruckDataRecord> records)
         {
-            var sql = "insert into dbo.FoodTrucks (Id, CompanyName, FacilityType, Address, FoodItems, Location) values (@objectid, @applicant, @facilitytype, @address, @fooditems, geography::Point(@latitude, @longitude, 4326))";
+
+            var sql = @"MERGE INTO dbo.FoodTrucks as ft using (Select @objectid as Id) As newval(Id) on ft.Id = newval.Id
+                WHEN MATCHED THEN
+                    Update Set CompanyName = @applicant, FacilityType = @facilitytype, Address = @address, FoodItems = @fooditems, Location = geography::Point(@latitude, @longitude, 4326)
+                WHEN NOT MATCHED THEN 
+                    insert (Id, CompanyName, FacilityType, Address, FoodItems, Location) values (@objectid, @applicant, @facilitytype, @address, @fooditems, geography::Point(@latitude, @longitude, 4326));";
             using (var connection = new SqlConnection(_config.GetConnectionString("FoodTruckDatabase")))
             {
 
                 var affectedRows = connection.Execute(sql, records);
-                Console.WriteLine($"Affected Rows: {affectedRows}");
+                if(affectedRows != records.Count())
+                {
+                    throw new Exception("Error loading records");
+                }
             }
         }
     }
